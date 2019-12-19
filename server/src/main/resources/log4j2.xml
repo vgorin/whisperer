@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+		</Console>
+		<File name="File-App" fileName="${sys:catalina.home}/logs/whisperer-app.log">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+		</File>
+		<File name="File-All" fileName="${sys:catalina.home}/logs/whisperer-all.log">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+		</File>
+	</Appenders>
+	<Loggers>
+		<Root level="trace">
+			<AppenderRef ref="File-All"/>
+		</Root>
+		<Logger name="core911" level="trace">
+			<AppenderRef ref="File-App"/>
+		</Logger>
+	</Loggers>
+</Configuration>
