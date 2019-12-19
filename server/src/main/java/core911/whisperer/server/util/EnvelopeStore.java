@@ -1,6 +1,6 @@
 package core911.whisperer.server.util;
 
-import core911.whisperer.server.resources.MessageEnvelope;
+import core911.whisperer.common.resources.MessageEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,15 +89,17 @@ public class EnvelopeStore {
     private void cleanup(short topic) {
         log.trace("cleaning up topic {}", topic);
         Collection<MessageEnvelope> envelopes = envelopeStore.get(topic);
-        for(MessageEnvelope envelope: envelopes) {
-            if(envelope.expired()) {
-                log.trace("removing expired envelope {}", envelope);
-                envelopes.remove(envelope);
+        if(envelopes != null) {
+            for(MessageEnvelope envelope : envelopes) {
+                if(envelope.expired()) {
+                    log.trace("removing expired envelope {}", envelope);
+                    envelopes.remove(envelope);
+                }
             }
-        }
-        if(envelopes.isEmpty()) {
-            log.trace("removing empty topic {}", topic);
-            envelopeStore.remove(topic);
+            if(envelopes.isEmpty()) {
+                log.trace("removing empty topic {}", topic);
+                envelopeStore.remove(topic);
+            }
         }
     }
 

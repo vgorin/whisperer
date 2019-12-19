@@ -1,14 +1,13 @@
-package core911.whisperer.server.resources;
+package core911.whisperer.common.resources;
 
 import core911.whisperer.common.util.AbstractJson;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.time.Instant;
 
 /**
  * @author vgorin
- * file created on 12/19/2019 5:06 AM
+ *         file created on 12/19/2019 5:06 AM
  */
 
 @XmlRootElement
@@ -41,7 +40,7 @@ public class MessageEnvelope extends AbstractJson {
 
 
     public boolean expired() {
-        return expiry <= Instant.now().getEpochSecond();
+        return expiry <= System.currentTimeMillis() / 1000;
     }
 
 

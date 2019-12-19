@@ -1,6 +1,6 @@
 package core911.whisperer.server.services;
 
-import core911.whisperer.server.resources.MessageEnvelope;
+import core911.whisperer.common.resources.MessageEnvelope;
 import core911.whisperer.server.util.EnvelopeStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +79,7 @@ public class WhispererService {
             throw new BadRequestException("Invalid implied insertion time! You will be punished!!!");
         }
         // TODO: implement real nonce validation
-        if(envelope.nonce != 3141592653589793L) {
+        if(envelope.nonce > 3141592653589793L) {
             log.debug("Invalid nonce: {}", envelope);
             throw new BadRequestException("Invalid nonce! Work more to find the correct nonce.");
         }

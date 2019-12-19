@@ -4,10 +4,10 @@
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
 		</Console>
-		<File name="File-App" fileName="${sys:catalina.home}/logs/whisperer-server-app.log">
+		<File name="File-App" fileName="${sys:catalina.home}/logs/whisperer-client-app.log">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
 		</File>
-		<File name="File-All" fileName="${sys:catalina.home}/logs/whisperer-server-all.log">
+		<File name="File-All" fileName="${sys:catalina.home}/logs/whisperer-client-all.log">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
 		</File>
 	</Appenders>
