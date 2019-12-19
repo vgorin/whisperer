@@ -4,22 +4,49 @@ import core911.whisperer.common.util.AbstractJson;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.time.Instant;
 
 /**
  * @author vgorin
- *         file created on 12/19/2019 5:06 PM
+ * file created on 12/19/2019 5:06 AM
  */
 
 @XmlRootElement
 public class MessageEnvelope extends AbstractJson {
+    // TODO: this implementation is not accurate, actual memory consumption can be lower (see object and array headers)
+    /**
+     * object header (2 words – 16 bytes), https://stackoverflow.com/questions/26357186/what-is-in-java-object-header
+     * nonce field (8 bytes)
+     * fields – expiry (4 bytes), ttl (2 bytes), topic (2 bytes)
+     * message array header (16 bytes)
+     * array contents size - 256 bytes
+     */
+    public static final int MAX_SIZE = 304;
+
+    /* All the elements are ordered as in JVM */
+
+    /* long/double, int/float, short/char, byte/boolean */
+    @XmlElement
+    public long nonce;
     @XmlElement
     public int expiry;
     @XmlElement
     public short ttl;
     @XmlElement
     public short topic;
+
+    /* references */
     @XmlElement
     public byte[] message;
-    @XmlElement
-    public long nonce;
+
+
+    public boolean expired() {
+        return expiry <= Instant.now().getEpochSecond();
+    }
+
+
+    public int impliedInsertionTime() {
+        return expiry - ttl;
+    }
+
 }
