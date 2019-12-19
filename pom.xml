@@ -10,9 +10,14 @@
     <modules>
         <module>server</module>
         <module>client</module>
+        <module>common</module>
     </modules>
 
     <packaging>pom</packaging>
+
+    <properties>
+        <jackson.version>2.8.5</jackson.version>
+    </properties>
 
     <dependencies>
         <!-- SLF4J based logging with log4 impl (runtime) -->

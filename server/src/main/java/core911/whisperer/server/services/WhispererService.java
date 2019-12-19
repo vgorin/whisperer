@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * @author vgorin
- * file created on 2019-12-19 05:02
+ *         file created on 12/19/2019 5:02 PM
  */
 
 @Path("/")
@@ -51,7 +51,7 @@ public class WhispererService {
 
     private void validateEnvelope(MessageEnvelope envelope) {
         if(envelope == null) {
-            log.trace("No envelope: {}", envelope);
+            log.trace("No envelope: null");
             throw new BadRequestException("No envelope");
         }
         if(envelope.expiry <= Instant.now().getEpochSecond()) {
