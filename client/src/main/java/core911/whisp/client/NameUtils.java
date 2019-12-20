@@ -9,7 +9,7 @@ import java.math.BigInteger;
 
 class NameUtils {
     private static final String[] NAME_TITLE = {"Big", "Tall", "Small", "Deep", "Slim", "Curvy", "Tiny", "Strong", "Long", "Hard", "Brave", "Funny"};
-    private static final String[] NAME_FIRST = {"Juicy", "Tasty", "Salty", "Sweet", "Bitter", "Hot", "Cold", "Dirty", "Fat"};
+    private static final String[] NAME_FIRST = {"Juicy", "Tasty", "Salty", "Sweet", "Bitter", "Hot", "Cold", "Dirty", "Talky"};
     private static final String[] NAME_LAST = {"Apricot", "Banana", "Apple", "Carrot", "Potato", "Onion", "Pear", "Octopus", "Ramp", "Cherry", "Basil", "Garlic", "Lime", "Pea", "Mushroom", "Crucian", "Crab", "Catfish", "Aloe", "Cactus"};
 
     static String generateName(byte[] hash) {

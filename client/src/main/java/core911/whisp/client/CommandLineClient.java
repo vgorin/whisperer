@@ -20,9 +20,11 @@ public class CommandLineClient {
         Options options = new Options();
         options.addOption("e", "endpoint", true, "endpoint address");
 
+/*
         // automatically generate the help statement:
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("whisperer", options );
+*/
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
