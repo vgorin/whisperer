@@ -15,7 +15,7 @@
 		<Root level="trace">
 			<AppenderRef ref="File-All"/>
 		</Root>
-		<Logger name="core911" level="trace">
+		<Logger name="core911" level="debug">
 			<AppenderRef ref="File-App"/>
 		</Logger>
 	</Loggers>

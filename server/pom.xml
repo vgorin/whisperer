@@ -13,6 +13,7 @@
 
     <packaging>war</packaging>
     <build>
+        <finalName>whisp</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -26,6 +27,25 @@
     </build>
 
     <dependencies>
+        <!-- SLF4J based logging with log4 impl (runtime) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.5</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Jersey with media (XML, JSON) support (runtime) -->
         <dependency>
             <groupId>org.glassfish.jersey.bundles</groupId>
@@ -72,7 +92,6 @@
             <version>${jackson.version}</version>
             <scope>runtime</scope>
         </dependency>
-
 
     </dependencies>
 

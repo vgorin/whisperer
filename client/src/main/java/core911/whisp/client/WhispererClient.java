@@ -53,7 +53,7 @@ public class WhispererClient {
 
     public void sendMessage(short topic, byte[] message) throws IOException {
         Collection<MessageEnvelope> envelopes = prepareMessage(topic, message);
-        log.trace("sending the messages {}", envelopes);
+        log.debug("sending the envelopes {}", envelopes);
         markAsKnown(envelopes);
         httpSend(envelopes);
     }
@@ -156,7 +156,7 @@ public class WhispererClient {
             String json = MessageEnvelope.toJson(envelopes);
             request.setEntity(new StringEntity(json));
 
-            log.trace("[{}] POST {}\n\n{}", sessionId, endpoint, json);
+            log.debug("[{}] POST {}\n\n{}", sessionId, endpoint, json);
             try(CloseableHttpResponse response = client.execute(request)) {
                 StatusLine status = response.getStatusLine();
                 log.debug("[{}] {}", sessionId, status);
@@ -209,7 +209,7 @@ public class WhispererClient {
 
     private String readOkResponse(int sessionId, HttpResponse response) throws IOException {
         StatusLine status = response.getStatusLine();
-        log.debug("[{}] {}", sessionId, status);
+        log.trace("[{}] {}", sessionId, status);
         if(status.getStatusCode() == 204) {
             return null;
         }

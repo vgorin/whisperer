@@ -1,7 +1,11 @@
 package core911.whisp.client;
 
-import java.io.*;
-import java.math.BigInteger;
+import org.apache.commons.cli.*;
+
+import java.io.BufferedReader;
+import java.io.Console;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -12,16 +16,30 @@ import java.util.Locale;
  */
 
 public class CommandLineClient {
-    // TODO: add more names to these lists
-    private static final String[] NAME_TITLE = {"Big", "Tall", "Small", "Deep", "Tiny"};
-    private static final String[] NAME_FIRST = {"Juicy", "Tasty", "Salty", "Sweet", "Bitter", "Hot", "Cold", "Chilly", "Icy"};
-    private static final String[] NAME_LAST = {"Apricot", "Banana", "Apple", "Carrot", "Potato", "Onion", "Pear", "Octopus", "Ramp", "Cherry", "Basil", "Garlic", "Lime", "Pea"};
-
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-        ChatEngine engine = new ChatEngine("http://localhost:45592/whisp/");
+        Options options = new Options();
+        options.addOption("e", "endpoint", true, "endpoint address");
+
+        // automatically generate the help statement:
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("whisperer", options );
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd;
+        try {
+            cmd = parser.parse(options, args);
+        }
+        catch(ParseException e) {
+            System.out.println(e.getMessage());
+            return;
+        }
+
+        String endpoint = cmd.getOptionValue("e", "http://core911.online/whisp/");
+
+        ChatEngine engine = new ChatEngine(endpoint);
         if(!engine.testConnection()) {
             System.out.println("Could not connect to the network. Did you forget to pay for the network?");
-            System.exit(-1);
+            return;
         }
 
         if(new Locale("ru").getLanguage().equalsIgnoreCase(Locale.getDefault().getLanguage())) {
@@ -50,20 +68,20 @@ public class CommandLineClient {
         System.out.println("(c) 2019 CORE911. Developed with *LOVE* by CORE911 Team.");
         System.out.println();
 
-        // TODO: review hashing algorithm
-        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-
         byte[] password = readPassword("Please identify yourself with a password (at least 8 characters):");
         if(password.length < 8) {
             System.out.println("Password is too short!");
             System.exit(1);
         }
+
+        // TODO: review hashing algorithm
+        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
         // TODO: review password hashing idea
         password = messageDigest.digest(password);
-        String name = generateName(password);
+        String name = NameUtils.generateName(password);
 
         System.out.println();
-        System.out.println("Thank you. We have hashed your password and it's no longer stored in the memory.");
+        System.out.println("Thank you. We have hashed your password and destroyed it immediately.");
         System.out.println(String.format("You are now known as %s. Other participants will see your messages signed by this name.", name));
         System.out.println();
         System.out.println("Your messages are padded to protect the metadata and then encrypted using your password to protect the data inside.");
@@ -71,6 +89,8 @@ public class CommandLineClient {
         System.out.println();
         System.out.println("...::: Welcome to the Dark! :::...");
         System.out.println();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(engine::shutdown));
 
         engine.listenDownstream(System.out);
         engine.listenUpstream(name, System.in, System.out);
@@ -88,14 +108,6 @@ public class CommandLineClient {
             password = reader.readLine().getBytes();
         }
         return password;
-    }
-
-    private static String generateName(byte[] hash) {
-        BigInteger i = new BigInteger(hash).abs();
-        String title = NAME_TITLE[i.remainder(BigInteger.valueOf(NAME_TITLE.length)).intValue()];
-        String first = NAME_FIRST[i.remainder(BigInteger.valueOf(NAME_FIRST.length)).intValue()];
-        String last = NAME_LAST[i.remainder(BigInteger.valueOf(NAME_LAST.length)).intValue()];
-        return String.format("%s %s %s", title, first, last);
     }
 
 }

@@ -71,7 +71,7 @@ public class ChatEngine {
                             }
                         }
                         else {
-                            log.trace("sending user message {}", line);
+                            log.debug("sending user message {}", line);
                             // TODO: encrypt the message
                             senderService.submit(() -> {
                                 try {
