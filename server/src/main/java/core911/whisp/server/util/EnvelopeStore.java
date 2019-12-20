@@ -50,10 +50,6 @@ public class EnvelopeStore {
         return envelopeStore.get(topic);
     }
 
-    public Collection<MessageEnvelope> get() {
-        return get((short)0);
-    }
-
     /**
      *
      * @return occupied memory size in bytes
@@ -95,7 +91,7 @@ public class EnvelopeStore {
         Collection<MessageEnvelope> envelopes = envelopeStore.get(topic);
         if(envelopes != null) {
             for(MessageEnvelope envelope : envelopes) {
-                if(envelope.isExpired()) {
+                if(envelope.expired()) {
                     log.trace("removing expired envelope {}", envelope);
                     envelopes.remove(envelope);
                 }

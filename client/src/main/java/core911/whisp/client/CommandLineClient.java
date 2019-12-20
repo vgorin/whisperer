@@ -1,12 +1,9 @@
 package core911.whisp.client;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import java.io.*;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Security;
 import java.util.Locale;
 
 /**
@@ -18,9 +15,15 @@ public class CommandLineClient {
     // TODO: add more names to these lists
     private static final String[] NAME_TITLE = {"Big", "Tall", "Small", "Deep", "Tiny"};
     private static final String[] NAME_FIRST = {"Juicy", "Tasty", "Salty", "Sweet", "Bitter", "Hot", "Cold", "Chilly", "Icy"};
-    private static final String[] NAME_LAST = {"Apricot", "Banana", "Apple", "Carrot", "Potato", "Onion", "Pear", "Pineapple", "Octopus", "Ramp", "Cherry", "Strawberry", "Blackberry"};
+    private static final String[] NAME_LAST = {"Apricot", "Banana", "Apple", "Carrot", "Potato", "Onion", "Pear", "Octopus", "Ramp", "Cherry", "Basil", "Garlic", "Lime", "Pea"};
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+        ChatEngine engine = new ChatEngine("http://localhost:45592/whisp/");
+        if(!engine.testConnection()) {
+            System.out.println("Could not connect to the network. Did you forget to pay for the network?");
+            System.exit(-1);
+        }
+
         if(new Locale("ru").getLanguage().equalsIgnoreCase(Locale.getDefault().getLanguage())) {
             System.out.println(
                     "  _____     _____                         \n" +
@@ -44,8 +47,9 @@ public class CommandLineClient {
                     "                          |_|                       ");
         }
         System.out.println();
+        System.out.println("(c) 2019 CORE911. Developed with *LOVE* by CORE911 Team.");
+        System.out.println();
 
-        Security.addProvider(new BouncyCastleProvider());
         // TODO: review hashing algorithm
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 
@@ -56,10 +60,11 @@ public class CommandLineClient {
         }
         // TODO: review password hashing idea
         password = messageDigest.digest(password);
+        String name = generateName(password);
 
         System.out.println();
         System.out.println("Thank you. We have hashed your password and it's no longer stored in the memory.");
-        System.out.println(String.format("You are now known as %s. Other participants will see your messages signed by this name.", generateName(password)));
+        System.out.println(String.format("You are now known as %s. Other participants will see your messages signed by this name.", name));
         System.out.println();
         System.out.println("Your messages are padded to protect the metadata and then encrypted using your password to protect the data inside.");
         System.out.println("No one except the recipient can look neither inside your messages nor observe them from outside.");
@@ -67,22 +72,8 @@ public class CommandLineClient {
         System.out.println("...::: Welcome to the Dark! :::...");
         System.out.println();
 
-        // TODO: derive shared encryption key without compromising the password and encrypt all messages
-
-
-        WhispererClient client = new WhispererClient("http://localhost:45592/whisperer/");
-        client.listenForMessages(new PrintWriter(System.out, true));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        String message;
-        do {
-            message = reader.readLine();
-            // TODO: encrypt message here and only then send
-            if(!client.sendMessage(message.getBytes())) {
-                System.out.println("ERROR: message was not sent!");
-            }
-        }
-        while(!"exit".equals(message));
-        client.stopListenForMessages();
+        engine.listenDownstream(System.out);
+        engine.listenUpstream(name, System.in, System.out);
     }
 
     private static byte[] readPassword(String message) throws IOException {

@@ -80,7 +80,7 @@
         <!-- Core911/Common with Jackson XML runtime dependencies -->
         <dependency>
             <groupId>core911</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>whisperer-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 

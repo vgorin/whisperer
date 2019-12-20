@@ -2,6 +2,7 @@ package core911.whisp.client;
 
 import core911.whisp.core.model.MessageEnvelope;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -14,163 +15,218 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author vgorin
- *         file created on 12/19/2019 1:29 PM
+ *         file created on 12/20/2019 4:33 AM
  */
 
 public class WhispererClient {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final AtomicBoolean listening = new AtomicBoolean(false);
+    private final URI endpoint;
 
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
-    private final ConcurrentMap<Long, Long> knownNonces = new ConcurrentHashMap<>();
-
-    private final String endpoint;
-    private static final short DEFAULT_TOPIC = 314;
+    private final ConcurrentMap<Integer, Short> knownMessages = new ConcurrentHashMap<>();
 
     public WhispererClient(String endpoint) {
+        try {
+            this.endpoint = new URI(endpoint);
+        }
+        catch(URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public WhispererClient(URI endpoint) {
         this.endpoint = endpoint;
     }
 
-    private Collection<MessageEnvelope> putIntoEnvelopes(byte[] message) {
-        Collection<MessageEnvelope> envelopes = new LinkedList<>();
-        envelopes.add(putIntoEnvelope(message));
+    public void sendMessage(short topic, String message) throws IOException {
+        sendMessage(topic, message.getBytes());
+    }
+
+    public void sendMessage(short topic, byte[] message) throws IOException {
+        Collection<MessageEnvelope> envelopes = prepareMessage(topic, message);
+        log.trace("sending the messages {}", envelopes);
+        markAsKnown(envelopes);
+        httpSend(envelopes);
+    }
+
+    public void sendMessage(String message) throws IOException {
+        sendMessage((short) 0, message);
+    }
+
+    public void sendMessage(byte[] message) throws IOException {
+        sendMessage((short) 0, message);
+    }
+
+    public byte[][] downloadNewMessages() throws IOException {
+        return downloadNewMessages((short) 0);
+    }
+
+    public byte[][] downloadNewMessages(short topic) throws IOException {
+        Collection<MessageEnvelope> envelopes = downloadAllEnvelopes(topic, false);
+        if(envelopes == null) {
+            return null;
+        }
+
+        LinkedList<byte[]> result = new LinkedList<>();
+        for(MessageEnvelope envelope: envelopes) {
+            if(knownMessages.putIfAbsent(envelope.hashCode(), topic) == null) {
+                result.add(removePadding(envelope.message));
+            }
+        }
+        return result.toArray(new byte[result.size()][]);
+    }
+
+    public byte[][] downloadAllMessages() throws IOException {
+        return downloadAllMessages((short) 0);
+    }
+
+    public byte[][] downloadAllMessages(short topic) throws IOException {
+        Collection<MessageEnvelope> envelopes = downloadAllEnvelopes(topic, true);
+        if(envelopes == null) {
+            return null;
+        }
+
+        byte[][] result = new byte[envelopes.size()][];
+        int i = 0;
+        for(MessageEnvelope envelope: envelopes) {
+            result[i++] = removePadding(envelope.message);
+        }
+        return result;
+    }
+
+    private Collection<MessageEnvelope> downloadAllEnvelopes(short topic, boolean markAsKnown) throws IOException {
+        Collection<MessageEnvelope> envelopes = httpReceive(topic);
+        if(markAsKnown && envelopes != null && !envelopes.isEmpty()) {
+            for(MessageEnvelope envelope: envelopes) {
+                knownMessages.put(envelope.hashCode(), envelope.topic);
+            }
+        }
         return envelopes;
     }
 
-    private MessageEnvelope putIntoEnvelope(byte[] message) {
+    private Collection<MessageEnvelope> prepareMessage(short topic, byte[] message) {
         MessageEnvelope envelope = new MessageEnvelope();
         envelope.nonce = (long) (Math.random() * 3141592653589793L);
-        envelope.expiry = (int) (System.currentTimeMillis() / 1000 + 3600);
-        envelope.ttl = 7200;
-        envelope.topic = DEFAULT_TOPIC;
-        envelope.message = new byte[256];
-        System.arraycopy(message, 0, envelope.message, 0, Math.min(message.length, 256));
-        return envelope;
+        envelope.expiry = (int) (System.currentTimeMillis() / 1000 + 120);
+        envelope.ttl = 300;
+        envelope.topic = topic;
+        envelope.message = addPadding(message);
+
+        return new LinkedList<MessageEnvelope>() {{
+            add(envelope);
+        }};
     }
 
-    private void sendEnvelopes(Collection<MessageEnvelope> envelopes) throws IOException {
-        log.trace("sending envelope {}", envelopes);
+    private byte[] addPadding(byte[] msg) {
+        byte[] padded = new byte[256];
+        System.arraycopy(msg, 0, padded, 0, Math.min(msg.length, 255));
+        padded[255] = (byte) msg.length;
+        return padded;
+    }
+
+    private byte[] removePadding(byte[] msg) {
+        int length = 0xFF & msg[255];
+        byte[] original = new byte[length];
+        System.arraycopy(msg, 0, original, 0, length);
+        return original;
+    }
+
+    private void markAsKnown(Collection<MessageEnvelope> envelopes) {
+        for(MessageEnvelope envelope: envelopes) {
+            knownMessages.put(envelope.hashCode(), envelope.topic);
+        }
+    }
+
+    public void httpSend(Collection<MessageEnvelope> envelopes) throws IOException {
+        int sessionId = (int) (Math.random() * 65536);
         try(CloseableHttpClient client = HttpClients.createDefault()) {
+            URI endpoint = this.endpoint;
             HttpPost request = new HttpPost(endpoint);
             request.setHeader("Accept", "application/json");
             request.setHeader("Content-type", "application/json");
-            request.setEntity(new StringEntity(MessageEnvelope.toJson(envelopes)));
+            String json = MessageEnvelope.toJson(envelopes);
+            request.setEntity(new StringEntity(json));
 
+            log.trace("[{}] POST {}\n\n{}", sessionId, endpoint, json);
             try(CloseableHttpResponse response = client.execute(request)) {
                 StatusLine status = response.getStatusLine();
+                log.debug("[{}] {}", sessionId, status);
                 if(status.getStatusCode() != 204) {
-                    log.trace("{}", status);
-                }
-                else {
-                    for(MessageEnvelope envelope: envelopes) {
-                        knownNonces.putIfAbsent(envelope.nonce, 2L);
-                    }
+                    throw new IOException(status.toString());
                 }
             }
-            catch(IOException e) {
-                log.debug("I/O error reading response", e);
-                throw e;
-            }
-        }
-        catch(IOException e) {
-            log.debug("I/O error sending request", e);
-            throw e;
         }
     }
 
-    private Collection<MessageEnvelope> readEnvelopes(short topic) throws IOException {
+    public Collection<MessageEnvelope> httpReceive(short topic) throws IOException {
+        int sessionId = (int) (Math.random() * 65536);
         try(CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(String.format("%s%d", endpoint, topic));
+            URI endpoint = this.endpoint.resolve(String.valueOf(topic));
+            HttpGet request = new HttpGet(endpoint);
             request.setHeader("Accept", "application/json");
+
+            log.trace("[{}] GET {}", sessionId, endpoint);
             try(CloseableHttpResponse response = client.execute(request)) {
-                StatusLine status = response.getStatusLine();
-                if(response.getStatusLine().getStatusCode() == 200) {
-                    HttpEntity entity = response.getEntity();
-                    try {
-                        String json = EntityUtils.toString(entity);
-                        try {
-                            return MessageEnvelope.fromJson(json);
-                        }
-                        catch(Exception e) {
-                            log.debug("malformed response", e);
-                            throw new IOException(e);
-                        }
-                    }
-                    finally {
-                        EntityUtils.consume(entity);
-                    }
+                String json = readOkResponse(sessionId, response);
+                log.trace("[{}] json received: {}", sessionId, json);
+                if(json == null) {
+                    return null;
                 }
-                else {
-                    log.debug("{}", status);
-                    return Collections.emptyList();
+                try {
+                    Collection<MessageEnvelope> envelopes = MessageEnvelope.fromJson(json);
+                    log.trace("[{}] json parsed: {}", sessionId, envelopes);
+                    return envelopes;
                 }
-            }
-            catch(IOException e) {
-                log.debug("I/O error reading response");
-                throw e;
+                catch(Exception e) {
+                    log.debug("[{}] could't parse json: {}", sessionId, json, e);
+                    throw new IOException(e);
+                }
             }
         }
+    }
+
+    public String getWelcomeMessage() throws IOException {
+        int sessionId = (int) (Math.random() * 65536);
+        try(CloseableHttpClient client = HttpClients.createDefault()) {
+            URI endpoint = this.endpoint.resolve("welcome");
+            HttpGet request = new HttpGet(endpoint);
+
+            log.trace("[{}] GET {}", sessionId, endpoint);
+            try(CloseableHttpResponse response = client.execute(request)) {
+                return readOkResponse(sessionId, response);
+            }
+        }
+    }
+
+    private String readOkResponse(int sessionId, HttpResponse response) throws IOException {
+        StatusLine status = response.getStatusLine();
+        log.debug("[{}] {}", sessionId, status);
+        if(status.getStatusCode() == 204) {
+            return null;
+        }
+        if(status.getStatusCode() != 200) {
+            throw new IOException(status.toString());
+        }
+
+        HttpEntity entity = response.getEntity();
+        try {
+            return EntityUtils.toString(entity);
+        }
         catch(IOException e) {
-            log.debug("I/O error sending request", e);
+            log.debug("[{}] error reading response", sessionId, e);
             throw e;
         }
-    }
-
-    public boolean sendMessage(byte[] message) {
-        Collection<MessageEnvelope> envelopes = putIntoEnvelopes(message);
-        try {
-            sendEnvelopes(envelopes);
-            return true;
-        }
-        catch(IOException e) {
-            return false;
+        finally {
+            EntityUtils.consume(entity);
         }
     }
-
-    public void listenForMessages(PrintWriter w) {
-        listening.set(true);
-        executorService.submit(() -> {
-            while(listening.get()) {
-                try {
-                    Collection<MessageEnvelope> envelopes = readEnvelopes(DEFAULT_TOPIC);
-                    if(envelopes != null) {
-                        for(MessageEnvelope envelope : envelopes) {
-                            if(knownNonces.putIfAbsent(envelope.nonce, 1L) == null) {
-                                log.trace("new envelope {}", envelope);
-                                w.println(new String(envelope.message));
-                            }
-                        }
-                    }
-                }
-                catch(IOException e) {
-                    log.debug("could not read new envelopes from the server", e);
-                    w.println("ERROR: could not parse server response");
-                }
-                try {
-                    Thread.sleep(247);
-                }
-                catch(InterruptedException e) {
-                    log.trace("interrupted", e);
-                }
-            }
-        });
-    }
-
-    public void stopListenForMessages() {
-        listening.set(false);
-    }
-
 }

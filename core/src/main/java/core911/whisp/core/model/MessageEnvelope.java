@@ -16,11 +16,11 @@ import java.util.Objects;
 public class MessageEnvelope implements Serializable {
     // TODO: this calculation is not accurate, actual memory consumption can be lower (see object and array headers)
     /**
-     * object header (2 words – 16 bytes), https://stackoverflow.com/questions/26357186/what-is-in-java-object-header
+     * object header (16 bytes - 2 words), https://stackoverflow.com/questions/26357186/what-is-in-java-object-header
      * nonce field (8 bytes)
-     * fields – expiry (4 bytes), ttl (2 bytes), topic (2 bytes)
+     * other fields (8 bytes) – expiry (4 bytes), ttl (2 bytes), topic (2 bytes)
      * message array header (16 bytes)
-     * array contents size - 256 bytes
+     * array contents size - 256 bytes (128 characters)
      */
     public static final int MAX_SIZE = 304;
 
@@ -40,13 +40,11 @@ public class MessageEnvelope implements Serializable {
     @XmlElement
     public byte[] message;
 
-    @XmlElement(name = "expired")
-    public boolean isExpired() {
+    public boolean expired() {
         return expiry <= System.currentTimeMillis() / 1000;
     }
 
-    @XmlElement(name = "implied_insertion_time")
-    public int getImpliedInsertionTime() {
+    public int impliedInsertionTime() {
         return expiry - ttl;
     }
 

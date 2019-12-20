@@ -47,8 +47,7 @@ public class WhispererService {
     @Path("/")
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
     public Collection<MessageEnvelope> getDefault() {
-        log.trace("GET /");
-        return envelopeStore.get();
+        return getByTopic((short) 0);
     }
 
 
@@ -64,7 +63,7 @@ public class WhispererService {
     @POST
     @Path("/")
     @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public void putMessages(List<MessageEnvelope> envelopes) {
+    public void putDefault(List<MessageEnvelope> envelopes) {
         log.trace("POST /");
         validateEnvelopes(envelopes);
         envelopeStore.put(envelopes);
@@ -75,7 +74,7 @@ public class WhispererService {
             log.debug("no envelope: null");
             throw new BadRequestException("no envelope");
         }
-        if(envelope.isExpired()) {
+        if(envelope.expired()) {
             log.debug("expired envelope: {}", envelope);
             throw new BadRequestException("envelope already expired: " + envelope.expiry);
         }
@@ -83,9 +82,9 @@ public class WhispererService {
             log.debug("invalid TTL: {}", envelope);
             throw new BadRequestException("invalid TTL: " + envelope.ttl);
         }
-        if(envelope.getImpliedInsertionTime() > Instant.now().getEpochSecond()) {
+        if(envelope.impliedInsertionTime() > Instant.now().getEpochSecond()) {
             log.debug("invalid implied insertion time: {}", envelope);
-            throw new BadRequestException("invalid implied insertion time: " + envelope.getImpliedInsertionTime());
+            throw new BadRequestException("invalid implied insertion time: " + envelope.impliedInsertionTime());
         }
         // TODO: implement real nonce validation
         if(envelope.nonce > 3141592653589793L) {
