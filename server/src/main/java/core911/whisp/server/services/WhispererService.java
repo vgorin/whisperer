@@ -1,7 +1,7 @@
-package core911.whisperer.server.services;
+package core911.whisp.server.services;
 
-import core911.whisperer.common.resources.MessageEnvelope;
-import core911.whisperer.server.util.EnvelopeStore;
+import core911.whisp.core.model.MessageEnvelope;
+import core911.whisp.server.util.EnvelopeStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,10 +24,10 @@ public class WhispererService {
     private static final EnvelopeStore envelopeStore = new EnvelopeStore();
 
     @GET
-    @Path("/")
+    @Path("/welcome")
     @Produces(MediaType.TEXT_PLAIN)
     public String getGreeting() {
-        log.trace("GET /");
+        log.trace("GET /welcome");
         return String.format(
                 "Hello, Whisperer...\nWe have %d messages somewhere in the dark...\nWe use about %d bytes of memory to store these messages...\nBut Tss!.. We had never told you any of that...",
                 envelopeStore.length(),
@@ -38,10 +38,19 @@ public class WhispererService {
     @GET
     @Path("/{topic}")
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-    public Collection<MessageEnvelope> getMessages(@PathParam("topic") short topic) {
+    public Collection<MessageEnvelope> getByTopic(@PathParam("topic") short topic) {
         log.trace("GET /{}", topic);
         return envelopeStore.get(topic);
     }
+
+    @GET
+    @Path("/")
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public Collection<MessageEnvelope> getDefault() {
+        log.trace("GET /");
+        return envelopeStore.get();
+    }
+
 
     @POST
     @Path("/{topic}")
@@ -63,33 +72,33 @@ public class WhispererService {
 
     private void validateEnvelope(MessageEnvelope envelope) {
         if(envelope == null) {
-            log.debug("No envelope: null");
-            throw new BadRequestException("No envelope");
+            log.debug("no envelope: null");
+            throw new BadRequestException("no envelope");
         }
-        if(envelope.expired()) {
-            log.debug("Expired envelope: {}", envelope);
-            throw new BadRequestException("Already expired!");
+        if(envelope.isExpired()) {
+            log.debug("expired envelope: {}", envelope);
+            throw new BadRequestException("envelope already expired: " + envelope.expiry);
         }
         if(envelope.ttl < 0) {
-            log.debug("Invalid TTL: {}", envelope);
-            throw new BadRequestException("Invalid TTL!");
+            log.debug("invalid TTL: {}", envelope);
+            throw new BadRequestException("invalid TTL: " + envelope.ttl);
         }
-        if(envelope.impliedInsertionTime() > Instant.now().getEpochSecond()) {
-            log.debug("Invalid implied insertion time: {}", envelope);
-            throw new BadRequestException("Invalid implied insertion time! You will be punished!!!");
+        if(envelope.getImpliedInsertionTime() > Instant.now().getEpochSecond()) {
+            log.debug("invalid implied insertion time: {}", envelope);
+            throw new BadRequestException("invalid implied insertion time: " + envelope.getImpliedInsertionTime());
         }
         // TODO: implement real nonce validation
         if(envelope.nonce > 3141592653589793L) {
-            log.debug("Invalid nonce: {}", envelope);
-            throw new BadRequestException("Invalid nonce! Work more to find the correct nonce.");
+            log.debug("invalid nonce: {}", envelope);
+            throw new BadRequestException("invalid nonce: " + envelope.nonce);
         }
         if(envelope.message == null) {
-            log.debug("Empty message: {}", envelope);
-            throw new BadRequestException("Empty message!");
+            log.debug("empty message: {}", envelope);
+            throw new BadRequestException("empty message");
         }
         if(envelope.message.length != 0x100) {
-            log.debug("Invalid message size ({} bytes): {}", envelope.message.length, envelope);
-            throw new BadRequestException("Invalid message size!");
+            log.debug("invalid message size ({} bytes): {}", envelope.message.length, envelope);
+            throw new BadRequestException("invalid message size: " + envelope.message.length);
         }
     }
 

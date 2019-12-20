@@ -10,7 +10,7 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>jersey.config.server.provider.packages</param-name>
-            <param-value>core911.whisperer.server.services;org.glassfish.jersey.filter;</param-value>
+            <param-value>core911.whisp.server.services;org.glassfish.jersey.filter;</param-value>
         </init-param>
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>

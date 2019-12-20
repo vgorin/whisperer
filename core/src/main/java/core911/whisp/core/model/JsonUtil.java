@@ -1,4 +1,4 @@
-package core911.whisperer.common.util;
+package core911.whisp.core.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
@@ -17,7 +17,7 @@ import java.io.IOException;
  */
 
 
-public class JsonUtil {
+class JsonUtil {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	static {
@@ -31,7 +31,7 @@ public class JsonUtil {
 		OBJECT_MAPPER.setAnnotationIntrospector(new AnnotationIntrospectorPair(new JacksonAnnotationIntrospector(), new JaxbAnnotationIntrospector()));
 	}
 
-	public static String toPrettyJson(Object obj) {
+	static String toPrettyJson(Object obj) {
 		try {
 			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(obj);
 		}
@@ -40,7 +40,7 @@ public class JsonUtil {
 		}
 	}
 
-	public static String toJson(Object obj) {
+	static String toJson(Object obj) {
 		try {
 			return OBJECT_MAPPER.writeValueAsString(obj);
 		}
@@ -49,7 +49,7 @@ public class JsonUtil {
 		}
 	}
 
-	public static <T> T parseJson(String json, Class<T> className) {
+	static <T> T parseJson(String json, Class<T> className) {
 		try {
 			return OBJECT_MAPPER.readValue(json, className);
 		}

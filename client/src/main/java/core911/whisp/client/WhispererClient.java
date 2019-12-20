@@ -1,7 +1,6 @@
-package core911.whisperer.client;
+package core911.whisp.client;
 
-import core911.whisperer.common.resources.MessageEnvelope;
-import core911.whisperer.common.util.JsonUtil;
+import core911.whisp.core.model.MessageEnvelope;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -16,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -69,7 +67,7 @@ public class WhispererClient {
             HttpPost request = new HttpPost(endpoint);
             request.setHeader("Accept", "application/json");
             request.setHeader("Content-type", "application/json");
-            request.setEntity(new StringEntity(JsonUtil.toJson(envelopes)));
+            request.setEntity(new StringEntity(MessageEnvelope.toJson(envelopes)));
 
             try(CloseableHttpResponse response = client.execute(request)) {
                 StatusLine status = response.getStatusLine();
@@ -104,8 +102,7 @@ public class WhispererClient {
                     try {
                         String json = EntityUtils.toString(entity);
                         try {
-                            MessageEnvelope[] envelopes = JsonUtil.parseJson(json, MessageEnvelope[].class);
-                            return Arrays.asList(envelopes);
+                            return MessageEnvelope.fromJson(json);
                         }
                         catch(Exception e) {
                             log.debug("malformed response", e);
