@@ -94,7 +94,7 @@ public class CommandLineClient {
 
         Runtime.getRuntime().addShutdownHook(new Thread(engine::shutdown));
 
-        engine.listenDownstream(System.out);
+        engine.listenDownstream(new ColorizedPrintStream(System.out));
         engine.listenUpstream(name, System.in, System.out);
     }
 
